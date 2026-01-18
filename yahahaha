@@ -1,125 +1,62 @@
--- Coin Generator dengan GUI Otomatis
--- Taruh di: StarterPlayerScripts
+-- [BRAINROT MODE] Fake Inventory Dupe - Hanya Visual, Aman!
+-- Simpan di StarterPlayerScripts
 
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
+local player = game.Players.LocalPlayer
+local backpack = player:WaitForChild("Backpack")
 
--- Tunggu karakter dimuat (opsional, tapi aman)
-if not player.Character then
-	player.CharacterAdded:Wait()
+-- Fungsi untuk buat salinan visual
+local function createFakeDupe(originalTool)
+    if not originalTool or not originalTool:IsA("Tool") then return end
+
+    -- Clone tool (hanya untuk tampilan lokal)
+    local fake = originalTool:Clone()
+    fake.Name = "FAKE_DUPE_" .. originalTool.Name
+    fake.Transparency = 0.5 -- Agar terlihat "palsu"
+    
+    -- Tambahkan label lucu (opsional)
+    if fake:FindFirstChild("Handle") then
+        local surfaceGui = Instance.new("SurfaceGui")
+        surfaceGui.Face = Enum.NormalId.Top
+        surfaceGui.Adornee = fake.Handle
+        surfaceGui.AlwaysOnTop = true
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 0.2, 0)
+        textLabel.Position = UDim2.new(0, 0, 0.4, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = "DUPE!"
+        textLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+        textLabel.TextScaled = true
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.Parent = surfaceGui
+        surfaceGui.Parent = fake.Handle
+    end
+
+    fake.Parent = backpack
+    print("🧠 [BRAINROT] Fake dupe dibuat: " .. originalTool.Name)
+
+    -- Hapus otomatis setelah 5 detik biar nggak lag
+    spawn(function()
+        wait(5)
+        if fake and fake.Parent then
+            fake:Destroy()
+        end
+    end)
 end
 
--- === BUAT GUI SECARA OTOMATIS ===
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "CoinGeneratorGUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
-
--- Background semi-transparan (opsional, agar enak dilihat)
-local background = Instance.new("Frame")
-background.Size = UDim2.new(0, 240, 0, 160)
-background.Position = UDim2.new(0.5, -120, 0, 80)
-background.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-background.BackgroundTransparency = 0.3
-background.BorderSizePixel = 0
-background.Parent = screenGui
-
--- Judul
-local title = Instance.new("TextLabel")
-title.Text = "💰 COIN GENERATOR"
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Position = UDim2.new(0, 0, 0, 0)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.TextColor3 = Color3.fromRGB(255, 215, 0)
-title.BackgroundTransparency = 1
-title.Parent = background
-
--- Tampilan coin saat ini
-local coinDisplay = Instance.new("TextLabel")
-coinDisplay.Text = "Loading..."
-coinDisplay.Size = UDim2.new(1, 0, 0, 30)
-coinDisplay.Position = UDim2.new(0, 0, 0, 35)
-coinDisplay.Font = Enum.Font.Gotham
-title.TextSize = 16
-coinDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-coinDisplay.BackgroundTransparency = 1
-coinDisplay.Parent = background
-
--- Input jumlah
-local amountInput = Instance.new("TextBox")
-amountInput.Text = "1000"
-amountInput.PlaceholderText = "Contoh: 5000"
-amountInput.Size = UDim2.new(1, -20, 0, 30)
-amountInput.Position = UDim2.new(0, 10, 0, 70)
-amountInput.Font = Enum.Font.Gotham
-amountInput.TextSize = 16
-amountInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-amountInput.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-amountInput.BackgroundTransparency = 0
-amountInput.BorderSizePixel = 0
-amountInput.Parent = background
-
--- Tombol SET
-local setButton = Instance.new("TextButton")
-setButton.Text = "SET COIN"
-setButton.Size = UDim2.new(1, -20, 0, 30)
-setButton.Position = UDim2.new(0, 10, 0, 110)
-setButton.Font = Enum.Font.GothamBold
-setButton.TextSize = 16
-setButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-setButton.BackgroundColor3 = Color3.fromRGB(60, 180, 75)
-setButton.AutoButtonColor = true
-setButton.Parent = background
-
--- === SISTEM COIN (CLIENT-SIDE) ===
-local function getOrCreateCoins()
-	if not player:FindFirstChild("leaderstats") then
-		local leaderstats = Instance.new("Folder")
-		leaderstats.Name = "leaderstats"
-		leaderstats.Parent = player
-	end
-
-	if not player.leaderstats:FindFirstChild("Coins") then
-		local coins = Instance.new("IntValue")
-		coins.Name = "Coins"
-		coins.Value = 0
-		coins.Parent = player.leaderstats
-	end
-
-	return player.leaderstats.Coins
-end
-
-local coins = getOrCreateCoins()
-
--- Update tampilan
-local function updateDisplay()
-	coinDisplay.Text = "💰 Coin: " .. coins.Value
-end
-
-coins.Changed:Connect(updateDisplay)
-updateDisplay()
-
--- Saat tombol diklik
-setButton.MouseButton1Click:Connect(function()
-	local input = amountInput.Text:match("^%d+") -- hanya ambil angka di awal
-	if input then
-		local amount = tonumber(input)
-		if amount and amount >= 0 and amount <= 99999999 then
-			coins.Value = amount
-			-- Efek visual feedback
-			TweenService:Create(
-				setButton,
-				TweenInfo.new(0.1),
-				{BackgroundColor3 = Color3.fromRGB(80, 220, 100)}
-			):Play()
-			wait(0.1)
-			setButton.BackgroundColor3 = Color3.fromRGB(60, 180, 75)
-		else
-			warn("Nilai terlalu besar atau tidak valid!")
-		end
-	else
-		warn("Masukkan angka!")
-	end
+-- Deteksi saat ada tool masuk ke backpack
+backpack.ChildAdded:Connect(function(child)
+    if child:IsA("Tool") then
+        wait(0.2) -- Jeda kecil agar aman
+        createFakeDupe(child)
+    end
 end)
+
+-- Juga cek tool yang sudah ada saat pertama kali join
+for _, tool in ipairs(backpack:GetChildren()) do
+    if tool:IsA("Tool") then
+        createFakeDupe(tool)
+    end
+end
+
+print("✅ Fake Dupe Visual aktif! (Hanya kamu yang lihat)")
